@@ -4,6 +4,8 @@ This Rust crate implements the RC4 stream cipher, optimized for embedded use cas
 
 **Note:** RC4 is known to be a broken encryption algorithm with several vulnerabilities. It is not recommended for use in security-critical applications.
 
+Based on the book [High Assurance Rust](https://github.com/tnballo/high-assurance-rust)
+
 ## Features
 
 - **No Standard Library Dependency**: Suitable for embedded environments.
