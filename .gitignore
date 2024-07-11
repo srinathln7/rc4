@@ -1,3 +1,5 @@
 
 # secret file to be encrypted 
 secret.txt
+
+target/
