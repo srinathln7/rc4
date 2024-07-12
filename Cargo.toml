@@ -3,3 +3,6 @@ members = [
     "rc4",
     "rcli"
 ]
+
+[profile.release]
+strip = true 
