@@ -23,6 +23,14 @@ struct Args {
 }
 
 
+fn is_printable_ascii(byte: u8) -> bool {
+    byte.is_ascii_graphic() // Check if byte is a graphic ASCII character
+    || byte == b' '   // OR if it is a space character
+    || byte == b'\n'  // OR if it is a newline character
+    || byte == b'\r'  // OR if it is a carriage return character 
+}
+
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     //println!("{:?}", args); 
@@ -43,6 +51,10 @@ fn main() -> std::io::Result<()> {
     // Read all file contents into memory
     file.read_to_end(&mut contents)?;
 
+    // Heuristic: Count the number of printable ASCII characters
+    let printable_count = contents.iter().filter(|&&byte| is_printable_ascii(byte)).count();
+    let printable_ratio = printable_count as f64 / contents.len() as f64;  
+
     // En/decrypt file contents in-memory
     Rc4::apply_keystream_static(&key_bytes, &mut contents);
 
@@ -51,7 +63,11 @@ fn main() -> std::io::Result<()> {
     file.write_all(&contents); 
 
     // Print success message
-    println!("Processed {}", args.file);
+    if printable_ratio > 0.7 {
+        println!("Encrypted {}", args.file);
+    } else {
+        println!("Decrypted {}", args.file);
+    }
 
     Ok(())
 }
