@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 rc4 = { path = "../rc4" }
 clap = { version = "^4", features = ["derive"] }
+walkdir = "2.3.2"

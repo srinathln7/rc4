@@ -2,7 +2,7 @@ use clap::Parser;
 use rc4::Rc4; 
 use std::fs::File; 
 use std::io::prelude::{Read, Seek, Write}; 
-
+use walkdir::WalkDir; 
 
 /// RC4 file en/decryption
 #[derive(Parser, Debug)]
@@ -19,7 +19,11 @@ struct Args {
         value_name = "HEX_BYTE",
         num_args = 5..=256, 
     )]
-    key: Vec<String>
+    key: Vec<String>,
+
+    /// Recursively process files in dirs
+    #[arg(short, long)]
+    recursive: bool, 
 }
 
 
@@ -31,22 +35,15 @@ fn is_printable_ascii(byte: u8) -> bool {
 }
 
 
-fn main() -> std::io::Result<()> {
-    let args = Args::parse();
-    //println!("{:?}", args); 
+
+fn process_file(file_path: &str, key_bytes: &[u8]) -> std::io::Result<()> {
+    
 
     let mut contents = Vec::new();
 
-    let key_bytes = args
-    .key
-    .iter()
-    .map(|s| s.trim_start_matches("0x"))
-    .map(|s| u8::from_str_radix(s,16).expect("Invalid key hex byte!"))
-    .collect::<Vec<u8>>();
-
     // Open the file for both reading and writing
     // `?` operator tells the function to short circuit if an operation fails and immediately return the error 
-    let mut file = File::options().read(true).write(true).open(&args.file)?;
+    let mut file = File::options().read(true).write(true).open(file_path)?;
 
     // Read all file contents into memory
     file.read_to_end(&mut contents)?;
@@ -64,9 +61,36 @@ fn main() -> std::io::Result<()> {
 
     // Print success message
     if printable_ratio > 0.7 {
-        println!("Encrypted {}", args.file);
+        println!("Encrypted {}", file_path);
     } else {
-        println!("Decrypted {}", args.file);
+        println!("Decrypted {}", file_path);
+    }
+
+    Ok(())
+}
+
+
+fn main() -> std::io::Result<()> {
+    let args = Args::parse();
+    //println!("{:?}", args); 
+
+    let key_bytes = args
+    .key
+    .iter()
+    .map(|s| s.trim_start_matches("0x"))
+    .map(|s| u8::from_str_radix(s,16).expect("Invalid key hex byte!"))
+    .collect::<Vec<u8>>();
+
+    if args.recursive {
+        for entry in WalkDir::new(&args.file)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+        {
+            process_file(entry.path().to_str().unwrap(), &key_bytes)?;
+        }
+    } else {
+        process_file(&args.file, &key_bytes)?;
     }
 
     Ok(())
