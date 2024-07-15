@@ -81,6 +81,7 @@ fn main() -> std::io::Result<()> {
     .map(|s| u8::from_str_radix(s,16).expect("Invalid key hex byte!"))
     .collect::<Vec<u8>>();
 
+    // If the recursive flag is set, process each file in the directory and its subdirectories.
     if args.recursive {
         for entry in WalkDir::new(&args.file)
             .into_iter()

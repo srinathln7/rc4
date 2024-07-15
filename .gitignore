@@ -1,5 +1,5 @@
 
-# secret file to be encrypted 
-secret.txt
+# secret files to be encrypted 
+secret/
 
 target/
