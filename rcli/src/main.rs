@@ -1,7 +1,8 @@
 use clap::Parser; 
 use rc4::Rc4; 
 use std::fs::File; 
-use std::io::prelude::{Read, Seek, Write}; 
+use std::io::prelude::{Read, Seek, Write};
+use std::io::{self, BufReader, BufWriter}; 
 use walkdir::WalkDir; 
 
 /// RC4 file en/decryption
@@ -38,15 +39,28 @@ fn is_printable_ascii(byte: u8) -> bool {
 
 fn process_file(file_path: &str, key_bytes: &[u8]) -> std::io::Result<()> {
     
+    // `?` operator tells the function to short circuit if an operation fails and immediately return the error
 
+    // Open the file for both reading and writing 
+    let file = File::options().read(true).write(true).open(file_path)?;
+
+    let mut reader = BufReader::new(file.try_clone()?); 
+    let mut writer = BufWriter::new(file); 
+
+    let chunk_size = 4096; // 4KB
+    let mut buffer = vec![0; chunk_size]; 
+    
     let mut contents = Vec::new();
-
-    // Open the file for both reading and writing
-    // `?` operator tells the function to short circuit if an operation fails and immediately return the error 
-    let mut file = File::options().read(true).write(true).open(file_path)?;
+    loop {
+        let bytes_read = reader.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break; 
+        }
+        contents.extend_from_slice(&buffer[..bytes_read]);  
+    }
 
     // Read all file contents into memory
-    file.read_to_end(&mut contents)?;
+    // file.read_to_end(&mut contents)?;
 
     // Heuristic: Count the number of printable ASCII characters
     let printable_count = contents.iter().filter(|&&byte| is_printable_ascii(byte)).count();
@@ -56,8 +70,13 @@ fn process_file(file_path: &str, key_bytes: &[u8]) -> std::io::Result<()> {
     Rc4::apply_keystream_static(&key_bytes, &mut contents);
 
     // Overwrite existing file with the result
-    file.rewind()?; 
-    file.write_all(&contents); 
+    // file.rewind()?; 
+    // file.write_all(&contents);
+
+    // Move the file cursor to the beginning and write the entire contents buffer into the file
+    writer.seek(io::SeekFrom::Start(0))?;
+    writer.write_all(&contents)?; 
+    writer.flush()?;  
 
     // Print success message
     if printable_ratio > 0.7 {

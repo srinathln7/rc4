@@ -13,17 +13,11 @@ Based on the book [High Assurance Rust](https://github.com/tnballo/high-assuranc
 - **Flexible Key Length**: Supports key lengths from 40 to 2048 bits.
 - **Simple API**: Functions to initialize the cipher, generate keystream bytes, and apply the keystream to data.
 - **Command-Line Utility**: Encrypt and decrypt files using the provided utility.
+- **Recursive File Processing**: Encrypt or decrypt all files in a directory and its subdirectories.
+- **Large File Support**: Buffering is used to handle files too large to fit into memory.
 
 ## Usage
 
-### Library
-
-To use the RC4 library in your project, add the following to your `Cargo.toml`:
-
-```toml
-[dependencies]
-rc4 = { path = "path/to/rc4" }
-```
 
 ### API
 
@@ -54,16 +48,16 @@ cargo install --path .
 ### Usage
 
 ```sh
-./rc4_cli --file <FILE_NAME> --key <HEX_KEY_BYTES>
+rcli --file <FILE_NAME> --key <HEX_KEY_BYTES> [--recursive]
 ```
 
-- **`--file`**: The file to encrypt or decrypt.
+- **`--file`**: The file or directory to encrypt or decrypt.
 - **`--key`**: The encryption/decryption key in hexadecimal byte format.
+- **`--recursive`**: (Optional) If set, process all files in the specified directory and its subdirectories.
 
 ### Example
 
-Create a file `secret.txt` to you want to encrypt and decrypt and add contents in plaintext to it. 
-
+Create a file `secret.txt` you want to encrypt and decrypt, and add contents in plaintext to it.
 
 To Encrypt a file:
 
@@ -77,7 +71,18 @@ To Decrypt a file:
 rcli --file secret.txt --key 0x4b 0x8e 0x29 0x87 0x80
 ```
 
+To Recursively Encrypt files in a directory:
+
+```sh
+rcli --file my_directory --key 0x4b 0x8e 0x29 0x87 0x80 --recursive
+```
+
+To Recursively Decrypt files in a directory:
+
+```sh
+rcli --file my_directory --key 0x4b 0x8e 0x29 0x87 0x80 --recursive
+```
+
 ## License
 
 This project is licensed under the MIT License.
-
