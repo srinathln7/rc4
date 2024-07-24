@@ -17,14 +17,29 @@ pub struct Rc4 {
     j: u8, 
 }
 
+#[derive(Debug)]
+pub enum Rc4Error {
+    KeyTooShort(usize),
+    KeyTooLong(usize), 
+}
 
 impl Rc4 {
     
-    // Init a new Rc4 stream cipher instance
-    fn new(key :&[u8]) -> Self {
+    // Init a new Rc4 stream cipher instance: returns `Result<T, E>`
+    // Choosing the unit type ((), an empty value) instead of a custom error type is a "bare bones" approach. 
+    // One typically better-suited in private, internal APIs. 
+    fn new(key :&[u8]) -> Result<Self, Rc4Error> {
          
          // Verify valid key length (40 to 2048 bits)
-         assert!(5 <= key.len() && key.len() <= 256);
+         // assert!(5 <= key.len() && key.len() <= 256);
+         
+         const MIN_KEY_LEN:usize = 5;
+         const MAX_KEY_LEN: usize = 256; 
+         if key.len() < MIN_KEY_LEN {
+            return Err(Rc4Error::KeyTooShort(MIN_KEY_LEN));
+         } else if key.len() > MAX_KEY_LEN {
+            return Err(Rc4Error::KeyTooLong(MAX_KEY_LEN));
+         }  
 
          // Init our struct with default vals
          let mut rc4 = Rc4 {
@@ -52,7 +67,7 @@ impl Rc4 {
             rc4.s.swap(i, j as usize); 
          }
             // Return our initialized Rc4  => Notice no semi-colon
-            rc4 
+            Ok(rc4) 
            }
 
       // `prga_next` is our keystream generation function, it outputs a single keystream byte each time it's called. 
@@ -86,9 +101,10 @@ impl Rc4 {
     }
 
 
-    pub fn apply_keystream_static(key :&[u8], data: &mut[u8]) {
-        let mut rc4 = Rc4::new(key); 
+    pub fn apply_keystream_static(key :&[u8], data: &mut[u8]) -> Result<(), Rc4Error> {
+        let mut rc4 = Rc4::new(key)?; 
         rc4.apply_keystream(data); 
+        Ok(())
     }       
 }
 
@@ -122,7 +138,7 @@ mod tests {
         );
 
         // Encrypt in-place
-        Rc4::apply_keystream_static(&key, &mut msg); 
+        Rc4::apply_keystream_static(&key, &mut msg).expect("Encryption failed"); 
         assert_ne!(msg, plaintext);
 
         // Note how we don't print the ciphertext as a string, since it contains non-printable characters. 
@@ -130,7 +146,7 @@ mod tests {
         println!("Ciphertext: {:x?}", msg); 
 
         // Decrypt in-place 
-        Rc4::apply_keystream_static(&key,& mut msg); 
+        Rc4::apply_keystream_static(&key,& mut msg).expect("Decryption failed"); 
         assert_eq!(msg, plaintext); 
 
 
@@ -169,13 +185,14 @@ mod tests {
             (4096, [0xff, 0x25, 0xb5, 0x89, 0x95, 0x99, 0x67, 0x07, 0xe5, 0x1f, 0xbd, 0xf0, 0x8b, 0x34, 0xd8, 0x75]),
         ];
 
-        Rc4::apply_keystream_static(&key, &mut out_buf);
+        Rc4::apply_keystream_static(&key, &mut out_buf).expect("Failed to create a Rc4 instance");
 
         // Validate against official test vectors
         for (offset, expected) in test_vectors {
             assert_eq!(&out_buf[*offset..*offset+16] , expected)
         }
 
+        println!("All IETF 40-bit key official test vectors passed!");
     }
 
 }

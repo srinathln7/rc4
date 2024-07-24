@@ -40,7 +40,6 @@ fn is_printable_ascii(byte: u8) -> bool {
 fn process_file(file_path: &str, key_bytes: &[u8]) -> std::io::Result<()> {
     
     // `?` operator tells the function to short circuit if an operation fails and immediately return the error
-
     // Open the file for both reading and writing 
     let file = File::options().read(true).write(true).open(file_path)?;
 
@@ -67,8 +66,9 @@ fn process_file(file_path: &str, key_bytes: &[u8]) -> std::io::Result<()> {
     let printable_ratio = printable_count as f64 / contents.len() as f64;  
 
     // En/decrypt file contents in-memory
-    Rc4::apply_keystream_static(&key_bytes, &mut contents);
-
+    Rc4::apply_keystream_static(key_bytes, &mut contents)
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Rc4 Error: {:?}", e)))?;
+    
     // Overwrite existing file with the result
     // file.rewind()?; 
     // file.write_all(&contents);
